@@ -1,0 +1,33 @@
+# Build artifacts
+Build/
+Debug/
+Release/
+*.elf
+*.bin
+*.hex
+*.map
+*.o
+*.d
+
+# Toolchain / IDE specifics
+.mxproject
+.settings/
+.project
+.cproject
+
+# OS temporary files
+.DS_Store
+Thumbs.db
+
+# Antigravity CLI state tracking
+.atlastask/
+
+# Windows metadata inside WSL
+$RECYCLE.BIN/
+System Volume Information/
+*.lnk
+
+# Python & Jupyter notebooks tracking/cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
