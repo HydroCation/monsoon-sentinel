@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -40,16 +41,31 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+#define MPU6050_ADDR 0xD0 //0x68 shifted left by 1
+#define WHO_AM_I_REG 0x75
+#define MPU6050_ADDR 0xD0
+#define PWR_MGMT_1_REG 0x6B
+#define ACCEL_XOUT_H_REG 0x3B
 
+int16_t Accel_X_RAW = 0, Accel_Y_RAW = 0, Accel_Z_RAW = 0;
+int16_t Gyro_X_RAW = 0, Gyro_Y_RAW = 0, Gyro_Z_RAW = 0;
+uint8_t sensor_data[14];
+char uart_buf[100];
+
+uint8_t who_am_i_value = 0;
+HAL_StatusTypeDef test_status;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -89,14 +105,51 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
+  //Wake up the MPU
+  uint8_t wakeup_val = 0x00;
+  HAL_StatusTypeDef wake_status = HAL_I2C_Mem_Write(&hi2c1, MPU6050_ADDR, PWR_MGMT_1_REG, I2C_MEMADD_SIZE_8BIT, &wakeup_val, 1, 1000);
+  if (wake_status == HAL_OK){
+    //Light up solid for OK wakeup
+    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  } else {
+    //Blink rapidly on failure
+    while(1){
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      HAL_Delay(100);
+    }
+  }
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+    //Read all 14 bytes of sensor data per 'stream'
+    HAL_I2C_Mem_Read(&hi2c1, MPU6050_ADDR, ACCEL_XOUT_H_REG, I2C_MEMADD_SIZE_8BIT, sensor_data, 14, 1000);
+
+    //Reconstruct the 16 bit signed values
+    Accel_X_RAW = (int16_t)((sensor_data[0]<<8)|sensor_data[1]);
+    Accel_Y_RAW = (int16_t)((sensor_data[2]<<8)|sensor_data[3]);
+    Accel_Z_RAW = (int16_t)((sensor_data[4]<<8)|sensor_data[5]);
+
+    Gyro_X_RAW = (int16_t)((sensor_data[8]<<8)|sensor_data[9]);
+    Gyro_Y_RAW = (int16_t)((sensor_data[10]<<8)|sensor_data[11]);
+    Gyro_Z_RAW = (int16_t)((sensor_data[12]<<8)|sensor_data[13]);
+
+    //Format as CSV
+    int len = sprintf(uart_buf, "%d,%d,%d,%d,%d,%d\r\n",Accel_X_RAW, Accel_Y_RAW, Accel_Z_RAW, Gyro_X_RAW, Gyro_Y_RAW, Gyro_Z_RAW);
+
+    //Send CSV over UART2
+    HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, len, 100);
+
+    //Sample at 10 Hz
+    HAL_Delay(100);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -148,6 +201,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
