@@ -126,30 +126,35 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+  uint32_t last_sample_tick = HAL_GetTick();
+      const uint32_t sample_interval_ms = 10; // 10 ms = 100 Hz
 
-    //Read all 14 bytes of sensor data per 'stream'
-    HAL_I2C_Mem_Read(&hi2c1, MPU6050_ADDR, ACCEL_XOUT_H_REG, I2C_MEMADD_SIZE_8BIT, sensor_data, 14, 1000);
+      while (1)
+      {
+        if (HAL_GetTick() - last_sample_tick >= sample_interval_ms)
+        {
+          last_sample_tick += sample_interval_ms;
 
-    //Reconstruct the 16 bit signed values
-    Accel_X_RAW = (int16_t)((sensor_data[0]<<8)|sensor_data[1]);
-    Accel_Y_RAW = (int16_t)((sensor_data[2]<<8)|sensor_data[3]);
-    Accel_Z_RAW = (int16_t)((sensor_data[4]<<8)|sensor_data[5]);
+          HAL_I2C_Mem_Read(&hi2c1, MPU6050_ADDR, ACCEL_XOUT_H_REG,
+  I2C_MEMADD_SIZE_8BIT, sensor_data, 14, 100);
 
-    Gyro_X_RAW = (int16_t)((sensor_data[8]<<8)|sensor_data[9]);
-    Gyro_Y_RAW = (int16_t)((sensor_data[10]<<8)|sensor_data[11]);
-    Gyro_Z_RAW = (int16_t)((sensor_data[12]<<8)|sensor_data[13]);
+          Accel_X_RAW = (int16_t)((sensor_data[0] << 8) | sensor_data[1]);
+          Accel_Y_RAW = (int16_t)((sensor_data[2] << 8) | sensor_data[3]);
+          Accel_Z_RAW = (int16_t)((sensor_data[4] << 8) | sensor_data[5]);
 
-    //Format as CSV
-    int len = sprintf(uart_buf, "%d,%d,%d,%d,%d,%d\r\n",Accel_X_RAW, Accel_Y_RAW, Accel_Z_RAW, Gyro_X_RAW, Gyro_Y_RAW, Gyro_Z_RAW);
+          Gyro_X_RAW  = (int16_t)((sensor_data[8] << 8) | sensor_data[9]);
+          Gyro_Y_RAW  = (int16_t)((sensor_data[10] << 8) |
+  sensor_data[11]);
+          Gyro_Z_RAW  = (int16_t)((sensor_data[12] << 8) |
+  sensor_data[13]);
 
-    //Send CSV over UART2
-    HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, len, 100);
+          int len = sprintf(uart_buf, "%lu,%d,%d,%d,%d,%d,%d\r\n",
+                            last_sample_tick,
+                            Accel_X_RAW, Accel_Y_RAW, Accel_Z_RAW,
+                            Gyro_X_RAW, Gyro_Y_RAW, Gyro_Z_RAW);
 
-    //Sample at 10 Hz
-    HAL_Delay(100);
-
+          HAL_UART_Transmit(&huart2, (uint8_t*)uart_buf, len, 100);
+        }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

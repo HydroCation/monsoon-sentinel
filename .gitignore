@@ -1,4 +1,5 @@
-# Build artifacts
+# Build artifacts and listings
+build/
 Build/
 Debug/
 Release/
@@ -8,6 +9,7 @@ Release/
 *.map
 *.o
 *.d
+*.lst
 
 # Toolchain / IDE specifics
 .mxproject
@@ -15,19 +17,41 @@ Release/
 .project
 .cproject
 
-# OS temporary files
+# OS temporary files & metadata
 .DS_Store
 Thumbs.db
-
-# Antigravity CLI state tracking
-.atlastask/
-
-# Windows metadata inside WSL
+*:Zone.Identifier
+*.Zone.Identifier
 $RECYCLE.BIN/
 System Volume Information/
 *.lnk
 
-# Python & Jupyter notebooks tracking/cache
+# Antigravity CLI state tracking & context dumps
+.atlastask/
+full_codebase_bundle.md
+overseer_context.md
+
+# LaTeX compilation auxiliary files (preserve .tex, .pdf, .cls, .sty)
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Python & pytest tracking/cache
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+.pytest_cache/
+
+# Datasets and raw captures (exclude all CSVs and symlinks)
+data/raw/
+data/processed/*.csv
+*.csv
+
+# Track model configurations and weights in data/processed/
+!data/processed/*.json

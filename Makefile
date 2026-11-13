@@ -37,6 +37,7 @@ BUILD_DIR = build
 # C sources
 C_SOURCES =  \
 Core/Src/main.c \
+Core/Src/model_inference.c \
 Core/Src/stm32f4xx_it.c \
 Core/Src/stm32f4xx_hal_msp.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
@@ -110,7 +111,9 @@ AS_DEFS =
 # C defines
 C_DEFS =  \
 -DUSE_HAL_DRIVER \
--DSTM32F401xE
+-DSTM32F401xE \
+-DARM_MATH_CM4 \
+-D__FPU_PRESENT=1
 
 
 # AS includes
@@ -122,7 +125,8 @@ C_INCLUDES =  \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
--IDrivers/CMSIS/Include
+-IDrivers/CMSIS/Include \
+-IDrivers/CMSIS/DSP/Include
 
 
 # compile gcc flags
@@ -146,9 +150,9 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32F401XX_FLASH.ld
 
 # libraries
-LIBS = -lc -lm -lnosys 
-LIBDIR = 
-LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LIBS = -lc -lm -lnosys -larm_cortexM4lf_math
+LIBDIR = -LDrivers/CMSIS/DSP/Lib/GCC
+LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections -Wl,-u,model_predict
 
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
